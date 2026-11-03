@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personaje Dragon Ball</title>
+  </head>
+  <body>
+
+    <style>
+      img {
+        max-width: 250px;
+        display: block;
+        margin-top: 10px;
+      }
+    </style>
+
+    <input type="number" id="inputId" placeholder="ID">
+    <button id="btnBuscar">Buscar</button>
+
+    <h1 id="nombre">Nombre</h1>
+    <p id="descripcion">Descripción</p>
+    <img src="" alt="" id="imagen">
+    <p>Planeta: <strong id="planeta"></strong></p>
+    <hr>
+
+    <label for="transformaciones">Transformaciones:</label>
+    <select name="transformaciones" id="transformaciones">
+      <option value="">Seleccione</option>
+    </select>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+          async function obtenerDatosPersonaje(id) {
+            if (id == '' || id == undefined) {
+              return;
+            }
+
+            const URL = `https://dragonball-api.com/api/characters/${id}`;
+            const respuesta = await fetch(URL);
+
+            if (!respuesta.ok) {
+              alert(`Personaje no encontrado`);
+              return;
+            }
+
+            const datos = await respuesta.json();
+            console.log(datos);
+
+     
+            document.getElementById("nombre").innerText = datos.name;
+            document.getElementById("descripcion").innerText = datos.description;
+            
+    
+            document.getElementById("imagen").setAttribute("src", datos.image);
+            document.getElementById("imagen").setAttribute("alt", `Personaje ${datos.name}`);
+            document.getElementById("planeta").innerText = datos.originPlanet ? datos.originPlanet.name : "Desconocido";
+
+       
+            const selectTransformaciones = document.getElementById("transformaciones");
+            selectTransformaciones.innerHTML = '<option value="">Seleccione</option>';
+
+            if (datos.transformations && datos.transformations.length > 0) {
+              datos.transformations.forEach(t => {
+                const option = document.createElement("option");
+                option.value = t.id;
+                option.innerText = t.name;
+                selectTransformaciones.appendChild(option);
+              });
+            } else {
+              const option = document.createElement("option");
+              option.innerText = "Sin transformaciones";
+              selectTransformaciones.appendChild(option);
+            }
+          }
+
+  
+          document.getElementById("btnBuscar").addEventListener("click", () => {
+            const idPersonaje = document.getElementById("inputId").value;
+            obtenerDatosPersonaje(idPersonaje);
+          });
+      });
+    </script>
+  </body>
+</html>
