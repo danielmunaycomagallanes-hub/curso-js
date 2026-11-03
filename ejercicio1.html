@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador de Personajes</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 30px; 
+      background-color: #ffffff;
+      color: #150070;
+    }
+
+    form { margin-bottom: 15px; }
+
+    button {
+      background-color: #1b4f72; 
+      color: #ffffff;            
+      border: none;            
+      padding: 6px 12px;       
+      border-radius: 4px;      
+      cursor: pointer;         
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #154360; 
+    }
+
+    .loader {
+      border: 4px solid #d4e6f1;
+      border-top: 4px solid #1b4f72;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      animation: spin 1s linear infinite;
+      margin-top: 5px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .campo {
+      margin-bottom: 10px;
+    }
+
+    .campo label {
+      display: inline-block;
+      width: 130px;
+      font-weight: bold;
+      color: #1b4f72;
+    }
+
+    .campo input {
+      padding: 6px 10px;
+      width: 220px;
+      border: 1px solid #7f8c8d;
+      border-radius: 4px;
+      background-color: #f2f4f4;
+    }
+
+    input[readonly] {
+      background-color: #ebedef;
+      color: #2c3e50;
+    }
+
+    table { 
+      border-collapse: collapse; 
+      margin-top: 15px; 
+      width: 380px; 
+      text-align: center; 
+      background-color: #ebedef;
+      border: 1px solid #a6acaf;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td { 
+      border: 1px solid #a6acaf; 
+      padding: 10px; 
+    }
+
+    th { 
+      background: #2e86c1; 
+      color: #ffffff; 
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    td { 
+      font-size: 16px; 
+      font-weight: bold;
+      color: #2c3e50;
+      background-color: #f8f9f9;
+    }
+
+    #error {
+      color: #c0392b;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="formBusqueda">
+    <input type="number" id="id" placeholder="Código de personaje" required>
+    <button type="submit">Buscar</button>
+  </form>
+
+  <div id="animacion"></div>
+  <p id="error"></p>
+
+  <div class="campo">
+    <label><b>Nombre:</b></label><br>
+    <input type="text" id="nombre" readonly>
+  </div>
+  <div class="campo">
+    <label><b>Estatura:</b></label><br>
+    <input type="text" id="estatura" readonly>
+  </div>
+  <div class="campo">
+    <label><b>Peso:</b></label><br>
+    <input type="text" id="peso" readonly>
+  </div>
+  <div class="campo">
+    <label><b>Color cabello:</b></label><br>
+    <input type="text" id="colorCabello" readonly>
+  </div>
+  <div class="campo">
+    <label><b>Género:</b></label><br>
+    <input type="text" id="genero" readonly>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Películas</th>
+        <th>Vehículos</th>
+        <th>Naves</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="peliculas">0</td>
+        <td id="vehiculos">0</td>
+        <td id="naves">0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const formulario = document.getElementById("formBusqueda")
+      const idInput = document.getElementById("id")
+      const animacion = document.getElementById("animacion")
+      const errormensaje = document.getElementById("error")
+
+      const nombre = document.getElementById("nombre")
+      const estatura = document.getElementById("estatura")
+      const peso = document.getElementById("peso")
+      const colorCabello = document.getElementById("colorCabello")
+      const genero = document.getElementById("genero")
+
+      const peliculas = document.getElementById("peliculas")
+      const vehiculos = document.getElementById("vehiculos")
+      const naves = document.getElementById("naves")
+
+      function resetUI() {
+        nombre.value = ""
+        estatura.value = ""
+        peso.value = ""
+        colorCabello.value = ""
+        genero.value = ""
+        peliculas.innerText = "0"
+        vehiculos.innerText = "0"
+        naves.innerText = "0"
+        errormensaje.innerText = ""
+      }
+
+      formulario.addEventListener("submit", (e) => {
+        e.preventDefault()
+        const id = parseInt(idInput.value)
+
+        if (isNaN(id) || id <= 0) {
+          resetUI()
+          errormensaje.innerText = "Ingrese un número válido mayor a 0."
+          return
+        }
+
+        buscarPersonaje(id)
+      })
+
+      async function buscarPersonaje(id) {
+        resetUI()
+        animacion.setAttribute("class", "loader")
+
+        try {
+          const respuesta = await fetch(`https://swapi.dev/api/people/${id}/`)
+          animacion.removeAttribute("class")
+
+          if (!respuesta.ok) {
+            errormensaje.innerText = "Personaje no encontrado."
+            return
+          }
+
+          const datos = await respuesta.json()
+
+          nombre.value = datos.name
+          estatura.value = datos.height
+          peso.value = datos.mass
+          colorCabello.value = datos.hair_color
+          genero.value = datos.gender
+
+          peliculas.innerText = datos.films.length
+          vehiculos.innerText = datos.vehicles.length
+          naves.innerText = datos.starships.length
+
+        } catch (error) {
+          animacion.removeAttribute("class")
+          errormensaje.innerText = "Error de conexión."
+        }
+      }
+    })
+  </script>
+
+</body>
+</html>
