@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador de Planetas</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 30px; 
+      background-color: #f7f9fa;
+      color: #333;
+    }
+
+    form { margin-bottom: 15px; }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      animation: spin 1s linear infinite;
+      margin-top: 5px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    ul {
+      background-color: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px 15px 15px 30px;
+      width: 400px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      list-style-type: square;
+    }
+
+    li {
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: #2c3e50;
+    }
+
+    h3 {
+      color: #2c3e50;
+      margin-top: 20px;
+    }
+
+    #error {
+      color: #c0392b;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    input[type="number"] {
+      padding: 6px 10px;
+      width: 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="formBusqueda">
+    <input type="number" id="id" placeholder="Código de planeta" required>
+    <button type="submit">Buscar Planeta</button>
+  </form>
+
+  <div id="animacion"></div>
+  <p id="error"></p>
+
+
+  <h3>Datos del Planeta</h3>
+  <ul id="listaDatosPlaneta">
+    <li>Nombre: </li>
+    <li>Periodo de rotación: </li>
+    <li>Diámetro: </li>
+    <li>Gravedad: </li>
+    <li>Tipo de terreno: </li>
+    <li>Cantidad de habitantes: </li>
+  </ul>
+
+  <h3>Personajes que lo habitan</h3>
+  <ul id="listaResidentes">
+    <li>No hay registros</li>
+  </ul>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const formulario = document.getElementById("formBusqueda")
+      const idInput = document.getElementById("id")
+      const animacion = document.getElementById("animacion")
+      const errorMsg = document.getElementById("error")
+
+      const listaDatosPlaneta = document.getElementById("listaDatosPlaneta")
+      const listaResidentes = document.getElementById("listaResidentes")
+
+      function resetUI() {
+        listaDatosPlaneta.innerHTML = `
+          <li>Nombre: </li>
+          <li>Periodo de rotación: </li>
+          <li>Diámetro: </li>
+          <li>Gravedad: </li>
+          <li>Tipo de terreno: </li>
+          <li>Cantidad de habitantes: </li>
+        `
+        listaResidentes.innerHTML = `<li>No hay registros</li>`
+        errorMsg.innerText = ""
+      }
+
+      formulario.addEventListener("submit", (e) => {
+        e.preventDefault()
+        const id = parseInt(idInput.value)
+
+        if (isNaN(id) || id <= 0) {
+          resetUI()
+          errorMsg.innerText = "Ingrese un número entero válido mayor a 0."
+          return
+        }
+
+        buscarPlaneta(id)
+      })
+
+      async function buscarPlaneta(id) {
+        resetUI()
+        animacion.setAttribute("class", "loader")
+
+        try {
+          const respuesta = await fetch(`https://swapi.dev/api/planets/${id}/`)
+          animacion.removeAttribute("class")
+
+          if (!respuesta.ok) {
+            errorMsg.innerText = "Planeta no encontrado."
+            return
+          }
+          const datos = await respuesta.json()
+
+          listaDatosPlaneta.innerHTML = `
+            <li><strong>Nombre:</strong> ${datos.name}</li>
+            <li><strong>Periodo de rotación:</strong> ${datos.rotation_period}</li>
+            <li><strong>Diámetro:</strong> ${datos.diameter}</li>
+            <li><strong>Gravedad:</strong> ${datos.gravity}</li>
+            <li><strong>Tipo de terreno:</strong> ${datos.terrain}</li>
+            <li><strong>Cantidad de habitantes:</strong> ${datos.population}</li>
+          `
+          if (datos.residents.length === 0) {
+            listaResidentes.innerHTML = `<li>No hay residentes registrados en este planeta.</li>`
+          } else {
+            listaResidentes.innerHTML = "" // Limpiar lista
+            
+            for (let urlResidente of datos.residents) {
+              const respResidente = await fetch(urlResidente)
+              if (respResidente.ok) {
+                const dataResidente = await respResidente.json()
+                const li = document.createElement("li")
+                li.innerText = dataResidente.name
+                listaResidentes.appendChild(li)
+              }
+            }
+          }
+
+        } catch (error) {
+          animacion.removeAttribute("class")
+          errorMsg.innerText = "Error de conexión con el servidor."
+        }
+      }
+    })
+  </script>
+
+</body>
+</html>
